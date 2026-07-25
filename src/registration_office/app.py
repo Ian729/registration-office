@@ -4,7 +4,7 @@ import os
 from dataclasses import dataclass
 
 from github import Auth, Github
-from github.GithubException import GithubException
+from github.GithubException import GithubException, UnknownObjectException
 
 from .parser import parse_registration_request
 from .registry import register_project
@@ -19,6 +19,13 @@ class Settings:
     failure_label: str = "train-registration-failed"
 
 
+def ensure_label(repo, name: str, color: str, description: str) -> None:
+    try:
+        repo.get_label(name)
+    except UnknownObjectException:
+        repo.create_label(name=name, color=color, description=description)
+
+
 def run(settings: Settings | None = None) -> int:
     settings = settings or Settings(
         station_repo=os.getenv("TRAIN_STATION_REPO", "Ian729/train-station"),
@@ -29,8 +36,12 @@ def run(settings: Settings | None = None) -> int:
     )
     token = os.environ["GITHUB_TOKEN"]
     repo = Github(auth=Auth.Token(token)).get_repo(settings.station_repo)
-    failures = 0
 
+    ensure_label(repo, settings.request_label, "1d76db", "Request registration as a Train Station project")
+    ensure_label(repo, settings.success_label, "0e8a16", "Project registration completed")
+    ensure_label(repo, settings.failure_label, "d73a4a", "Project registration failed")
+
+    failures = 0
     for issue in repo.get_issues(state="open", labels=[settings.request_label]):
         labels = {label.name for label in issue.labels}
         if settings.success_label in labels:
@@ -53,8 +64,8 @@ def run(settings: Settings | None = None) -> int:
                 issue.remove_from_labels(settings.failure_label)
             issue.create_comment(
                 f"✅ Registered `{request.name}` from `{request.project_url}` in `{settings.registry_path}`."
-                if changed else
-                f"✅ `{request.name}` was already registered with the same project URL."
+                if changed
+                else f"✅ `{request.name}` was already registered with the same project URL."
             )
         except (ValueError, GithubException, KeyError) as exc:
             failures += 1
