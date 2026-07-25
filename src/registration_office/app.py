@@ -28,7 +28,7 @@ def ensure_label(repo, name: str, color: str, description: str) -> None:
 
 def run(settings: Settings | None = None) -> int:
     settings = settings or Settings(
-        station_repo=os.getenv("TRAIN_STATION_REPO", "Ian729/train-station"),
+        station_repo=os.getenv("REGISTRATION_STATION_REPO", "Ian729/train-station"),
         registry_path=os.getenv("TRAIN_STATION_REGISTRY", "projects.yaml"),
         request_label=os.getenv("REGISTRATION_REQUEST_LABEL", "train-registration"),
         success_label=os.getenv("REGISTRATION_SUCCESS_LABEL", "train-registered"),
